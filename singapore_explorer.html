@@ -47,7 +47,7 @@ a{color:var(--aux); text-decoration-thickness:1px; text-underline-offset:2px}
 .paperrow{display:flex; gap:12px; align-items:flex-start; background:var(--card); border:1px solid var(--rule);
   border-left:3px solid var(--oecd); border-radius:9px; padding:11px 14px; margin:12px 0 0; max-width:104ch;
   font-size:.85rem; line-height:1.5; color:var(--ink2); box-shadow:var(--shadow)}
-.paperrow .who{flex:none; width:76px; font-weight:800; font-size:.68rem; letter-spacing:.1em;
+.paperrow .who{flex:0 0 max-content; width:max-content; font-weight:800; font-size:.68rem; letter-spacing:.1em;
   text-transform:uppercase; color:var(--oecd); padding-top:.24em}
 .paperrow b{color:var(--ink)}
 @media (max-width:640px){.paperrow{flex-direction:column; gap:4px} .paperrow .who{width:auto; padding-top:0}}
@@ -533,8 +533,8 @@ function presetRun(){
 }
 /* display transform */
 function disp(v){ let x = P.x15 ? v : v/1.5; return P.cum ? (P.x15? v/1.5*10 : x*10) : x; }
-function unit(){ return P.cum ? '% cumulative change in real income · 10-year basis' : (P.x15 ? 'percentage points per year · ×1.5 reported basis' : 'percentage points per year · raw model basis'); }
-function shortUnit(){ return P.cum ? '% cumulative' : ' percentage points per year'; }
+function unit(){ return P.cum ? '% cumulative change in real income · 10-year basis' : (P.x15 ? 'pp per year · ×1.5 reported basis' : 'pp per year · raw model basis'); }
+function shortUnit(){ return P.cum ? '% cumulative' : ' pp/yr'; }
 
 /* ---------- render ---------- */
 function render(){
@@ -567,7 +567,7 @@ function render(){
   $('tDom').textContent = fmt(disp(sg.dom), P.cum?2:3);
   $('tFgn').textContent = fmt(disp(sg.fgn), P.cum?2:3);
   $('tAlloc').textContent = fmt(disp(sg.alloc), P.cum?2:3);
-  $('uTot').textContent = unit() + ' · raw model ' + fmt(sg.tot/1.5,3) + ' percentage points per year · ×1.5 reported ' + fmt(sg.tot,3) + ' percentage points per year';
+  $('uTot').textContent = unit() + ' · raw model ' + fmt(sg.tot/1.5,3) + ' pp per year · ×1.5 reported ' + fmt(sg.tot,3) + ' pp per year';
   $('uDom').textContent = unit() + ' · own productivity';
   $('uFgn').textContent = unit() + ' · cheaper imports and demand';
   $('uAlloc').textContent = unit() + ' · allocation and terms shift';
@@ -589,14 +589,17 @@ function drawDecomp(sg){
   const host = $('decomp'); const W = Math.min(host.clientWidth||700, 900), H=118;
   const items = [[CHANNELS.domestic,sg.dom,css('--oecd')],[CHANNELS.foreign,sg.fgn,css('--aux')],[CHANNELS.competitiveness,sg.alloc,css('--wb')]];
   const maxA = Math.max(.15, ...items.map(x=>Math.abs(disp(x[1]))), Math.abs(disp(sg.tot)));
-  const L=Math.min(410,W*.59), Rm=64, x0 = L+(W-L-Rm)*(maxA/(2*maxA)); const scale=(W-L-Rm)/(2*maxA);
+  const L=Math.min(118,W*.42), Rm=Math.min(90,W*.34), plotW=Math.max(24,W-L-Rm);
+  const x0 = L+plotW/2, scale=plotW/(2*maxA);
   let s = svgOpen(W,H,'Decomposition of Singapore gain');
   s += `<line x1="${x0}" y1="6" x2="${x0}" y2="${H-24}" stroke="${css('--rule')}" stroke-width="1.5"/>`;
   items.forEach((it,i)=>{
     const y=10+i*26, v=disp(it[1]), w=Math.abs(v)*scale, x=v>=0?x0:x0-w;
-    s += `<text x="${L-10}" y="${y+13}" text-anchor="end" font-size="12" font-weight="600" fill="${css('--ink2')}"><ti${''}tle>${it[0].definition}</ti${''}tle>${it[0].label}</text>`;
+    const label = it[0].label.split(' — ')[0];
+    const valueX = W-2, valueAnchor = 'end';
+    s += `<text x="${L-10}" y="${y+13}" text-anchor="end" font-size="12" font-weight="600" fill="${css('--ink2')}"><ti${''}tle>${it[0].definition}</ti${''}tle>${label}</text>`;
     s += `<rect x="${x}" y="${y}" width="${Math.max(w,1)}" height="17" rx="4" fill="${it[2]}"><ti${''}tle>${it[0].definition}</ti${''}tle></rect>`;
-    s += `<text x="${v>=0?x0+w+7:x0-w-7}" y="${y+13}" text-anchor="${v>=0?'start':'end'}" font-size="11.5" font-weight="700" fill="${css('--ink')}" class="num">${fmt(v,P.cum?2:3)+shortUnit()}</text>`;
+    s += `<text x="${valueX}" y="${y+13}" text-anchor="${valueAnchor}" font-size="11.5" font-weight="700" fill="${css('--ink')}" class="num">${fmt(v,P.cum?2:3)+shortUnit()}</text>`;
   });
   s += `<text x="${x0}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="${css('--ink3')}">0</text></svg>`;
   host.innerHTML = s;
